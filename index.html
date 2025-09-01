@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Korean Spelling Test — Click to Reveal</title>
+  <style>
+    :root { --fg:#111; --muted:#666; --accent:#2563eb; --ok:#1b7f0b; --bg:#f7f7fb; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"; background:var(--bg); color:var(--fg); }
+    .wrap { max-width: 860px; margin: 36px auto; padding: 0 16px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom: 12px; }
+    h1 { font-size: 18px; margin:0; font-weight: 600; }
+    .chip { font-size:12px; color:#fff; background:var(--accent); padding:4px 8px; border-radius:999px; }
+    .card { background:#fff; border:1px solid #e6e6ef; border-radius:14px; padding:24px; box-shadow:0 2px 6px rgba(0,0,0,.04); }
+    .prompt { font-size: clamp(28px, 6vw, 40px); font-weight: 800; text-align:center; line-height:1.15; word-break: break-word; }
+    .answer { font-size: clamp(28px, 6vw, 40px); text-align:center; color:var(--ok); margin-top: 14px; min-height: 2.2em; word-break: break-word; }
+    .controls { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top: 18px; }
+    button { border:1px solid #d0d4e4; background:#fff; color:var(--fg); border-radius:10px; padding:10px 14px; font-size:16px; cursor:pointer; }
+    button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+    button:focus { outline:2px solid #93c5fd; outline-offset:2px; }
+    .meta { text-align:center; margin-top:10px; color:var(--muted); font-size: 13px; }
+    footer { margin-top: 28px; text-align:center; color:var(--muted); font-size:12px; }
+    .bar { display:flex; align-items:center; justify-content:space-between; margin-top:8px; color:var(--muted); font-size:13px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Korean Spelling Test</h1>
+      <span class="chip" id="modeChip">EN → KO</span>
+    </header>
+
+    <div class="card">
+      <div class="prompt" id="prompt">Loading…</div>
+      <div class="answer" id="answer"></div>
+
+      <div class="controls">
+        <button class="primary" id="revealBtn">Show answer (Space/Enter)</button>
+        <button id="modeBtn" title="M">Flip mode (M)</button>
+        <button id="shuffleBtn" title="R">Shuffle now (R)</button>
+      </div>
+
+      <div class="bar">
+        <div id="progress">0/0</div>
+        <div>Click anywhere to reveal/advance • Press Q/Esc to quit tab</div>
+      </div>
+    </div>
+
+    <footer>Shuffles each loop • 98 items • Mode is remembered</footer>
+  </div>
+
+  <script>
+    // Full list (29 + 38 + 31 = 98)
+    const VOCAB = [
+      // ①
+      {english:"five",korean:"오"},
+      {english:"two",korean:"이"},
+      {english:"child",korean:"아이"},
+      {english:"cucumber",korean:"오이"},
+      {english:"formal shoes",korean:"구두"},
+      {english:"leg",korean:"다리"},
+      {english:"radio",korean:"라디오"},
+      {english:"baby",korean:"아기"},
+      {english:"country",korean:"나라"},
+      {english:"elder sister (male speaker)",korean:"누나"},
+      {english:"meat",korean:"고기"},
+      {english:"mother",korean:"어머니"},
+      {english:"father",korean:"아버지"},
+      {english:"singer",korean:"가수"},
+      {english:"bus",korean:"버스"},
+      {english:"soap",korean:"비누"},
+      {english:"cow",korean:"소"},
+      {english:"hat, cap",korean:"모자"},
+      {english:"head",korean:"머리"},
+      {english:"tree",korean:"나무"},
+      {english:"banana",korean:"바나나"},
+      {english:"sea",korean:"바다"},
+      {english:"pants",korean:"바지"},
+      {english:"rich person",korean:"부자"},
+      {english:"map",korean:"지도"},
+      {english:"spoon",korean:"수저"},
+      {english:"duck",korean:"오리"},
+      {english:"tofu",korean:"두부"},
+      {english:"pocket",korean:"주머니"},
+      // ②
+      {english:"news",korean:"뉴스"},
+      {english:"milk",korean:"우유"},
+      {english:"clock, watch",korean:"시계"},
+      {english:"female",korean:"여자"},
+      {english:"bird",korean:"새"},
+      {english:"world",korean:"세계"},
+      {english:"no",korean:"아니요"},
+      {english:"dog",korean:"개"},
+      {english:"talk",korean:"이야기"},
+      {english:"cooking",korean:"요리"},
+      {english:"snacks",korean:"과자"},
+      {english:"chair",korean:"의자"},
+      {english:"apple",korean:"사과"},
+      {english:"beef",korean:"쇠고기, 소고기"},
+      {english:"what",korean:"뭐"},
+      {english:"ear",korean:"귀"},
+      {english:"scissors",korean:"가위"},
+      {english:"textbook",korean:"교과서"},
+      {english:"pig",korean:"돼지"},
+      {english:"doctor",korean:"의사"},
+      {english:"skirt",korean:"치마"},
+      {english:"grape",korean:"포도"},
+      {english:"tomato",korean:"토마토"},
+      {english:"T-shirt",korean:"티셔츠"},
+      {english:"company",korean:"회사"},
+      {english:"nose",korean:"코"},
+      {english:"coffee",korean:"커피"},
+      {english:"pizza",korean:"피자"},
+      {english:"cake",korean:"케이크"},
+      {english:"camera",korean:"카메라"},
+      {english:"shoulder",korean:"어깨"},
+      {english:"dad",korean:"아빠"},
+      {english:"elephant",korean:"코끼리"},
+      {english:"to write",korean:"쓰다"},
+      {english:"to follow",korean:"따라 하다"},
+      {english:"to be cheap",korean:"싸다"},
+      {english:"rabbit",korean:"토끼"},
+      {english:"jjigae, stew",korean:"찌개"},
+      // ③
+      {english:"eye",korean:"눈"},
+      {english:"mountain",korean:"산"},
+      {english:"mobile phone",korean:"휴대폰"},
+      {english:"water",korean:"물"},
+      {english:"Hangeul",korean:"한글"},
+      {english:"question",korean:"질문"},
+      {english:"strawberry",korean:"딸기"},
+      {english:"night",korean:"밤"},
+      {english:"word",korean:"단어"},
+      {english:"Kimchi",korean:"김치"},
+      {english:"mom",korean:"엄마"},
+      {english:"student",korean:"학생"},
+      {english:"bread",korean:"빵"},
+      {english:"home",korean:"집"},
+      {english:"tiger",korean:"호랑이"},
+      {english:"knee",korean:"무릎"},
+      {english:"mouth",korean:"입"},
+      {english:"outside",korean:"밖"},
+      {english:"soup",korean:"국"},
+      {english:"book",korean:"책"},
+      {english:"Hanbok",korean:"한복"},
+      {english:"fishing",korean:"낚시"},
+      {english:"kitchen",korean:"부엌"},
+      {english:"to walk",korean:"걷다"},
+      {english:"clothes",korean:"옷"},
+      {english:"bottom",korean:"밑"},
+      {english:"daytime",korean:"낮"},
+      {english:"to be / to have",korean:"있다"},
+      {english:"hieut (Korean alphabet)",korean:"히읗"},
+      {english:"flower",korean:"꽃"},
+      {english:"teacher",korean:"선생님"},
+    ];
+    if (VOCAB.length !== 98) {
+      alert("Warning: expected 98 items, found " + VOCAB.length);
+    }
+
+    // UI refs
+    const promptEl = document.getElementById("prompt");
+    const answerEl = document.getElementById("answer");
+    const revealBtn = document.getElementById("revealBtn");
+    const modeBtn = document.getElementById("modeBtn");
+    const shuffleBtn = document.getElementById("shuffleBtn");
+    const modeChip = document.getElementById("modeChip");
+    const progressEl = document.getElementById("progress");
+
+    // State
+    let enToKo = (localStorage.getItem("mode") ?? "en") === "en"; // true = EN→KO
+    let showing = false;
+    let items = shuffle([...VOCAB]);
+    let i = 0;
+
+    function shuffle(a) {
+      for (let j = a.length - 1; j > 0; j--) {
+        const k = Math.floor(Math.random() * (j + 1));
+        [a[j], a[k]] = [a[k], a[j]];
+      }
+      return a;
+    }
+
+    function updateModeChip() {
+      modeChip.textContent = enToKo ? "EN → KO" : "KO → EN";
+    }
+
+    function setProgress() {
+      progressEl.textContent = `${i + 1}/${items.length}`;
+    }
+
+    function showQuestion() {
+      const it = items[i];
+      promptEl.textContent = enToKo ? it.english : it.korean;
+      answerEl.textContent = "";
+      revealBtn.textContent = "Show answer (Space/Enter)";
+      showing = false;
+      setProgress();
+    }
+
+    function showAnswer() {
+      const it = items[i];
+      answerEl.textContent = enToKo ? it.korean : it.english;
+      revealBtn.textContent = "Next (Space/Enter)";
+      showing = true;
+    }
+
+    function nextCard() {
+      i++;
+      if (i >= items.length) {
+        items = shuffle(items);
+        i = 0;
+      }
+      showQuestion();
+    }
+
+    function toggleMode() {
+      enToKo = !enToKo;
+      localStorage.setItem("mode", enToKo ? "en" : "ko");
+      updateModeChip();
+      showQuestion();
+    }
+
+    // Events
+    revealBtn.addEventListener("click", () => showing ? nextCard() : showAnswer());
+    modeBtn.addEventListener("click", toggleMode);
+    shuffleBtn.addEventListener("click", () => { items = shuffle(items); i = 0; showQuestion(); });
+
+    // Click anywhere
+    document.addEventListener("click", (e) => {
+      // Ignore clicks on buttons (they already handle)
+      if (e.target.tagName === "BUTTON") return;
+      showing ? nextCard() : showAnswer();
+    });
+
+    // Keys
+    document.addEventListener("keydown", (e) => {
+      if (e.key === " " || e.key === "Enter") { e.preventDefault(); showing ? nextCard() : showAnswer(); }
+      else if (e.key.toLowerCase() === "m") toggleMode();
+      else if (e.key.toLowerCase() === "r") { items = shuffle(items); i = 0; showQuestion(); }
+      else if (e.key === "Escape" || e.key.toLowerCase() === "q") window.close();
+    });
+
+    // Init
+    updateModeChip();
+    showQuestion();
+  </script>
+</body>
+</html>
